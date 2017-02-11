@@ -11,7 +11,7 @@ import 'utils.dart';
 import 'logger.dart';
 
 class ServeRoot extends RequestHandler {
-  final JaguarServerConfiguration config;
+  final DartnetConfiguration config;
   final Directory _rootDirectory;
 
   Template _listTmpl;
@@ -54,7 +54,7 @@ class ServeRoot extends RequestHandler {
 
   String _pathFromRootDir(String path) => "${_rootDirectory.path}/$path";
   FileSystemEntity _processError(int error) {
-    String path = getFromMap(config.redirections, error);
+    String path = config.redirections.redirectionFor(error);
     if (path != null) {
       File file = new File(_pathFromRootDir(path));
       if (file?.existsSync() == true) {
@@ -67,12 +67,13 @@ class ServeRoot extends RequestHandler {
   @override
   Future<Response> handleRequest(Request request, {String prefix}) async {
     Stopwatch timer = new Stopwatch()..start();
+
     int status = 200;
     String path = _requestedPath(request);
     FileSystemEntity entity = _pathInCache(path) ?? _findEntity(path);
 
     if (entity == null) {
-      entity = _findEntity(config.redirectionDefault);
+      entity = _findEntity(config.redirections.redirectionDefault);
     }
 
     if (entity == null) {
@@ -102,17 +103,6 @@ class ServeRoot extends RequestHandler {
     return null;
   }
 
-  File get _notFoundFile {}
-
-  FileSystemEntity _default() {
-    File notFound = _notFoundFile;
-    if (notFound != null && notFound.existsSync() == true) {
-      return notFound;
-    }
-
-    return null;
-  }
-
   Response _listDirectory(Directory dir) {
     List<FileSystemEntity> entities = dir.listSync();
 
@@ -130,7 +120,7 @@ class ServeRoot extends RequestHandler {
   }
 
   Response _errorTemplate(int error) {
-    String render = _errorTmpl.renderString({"name": config.pubspec.projectName, "error": error});
+    String render = _errorTmpl.renderString({"error": error});
     return new Response(render)..headers.mimeType = "text/html";
   }
 

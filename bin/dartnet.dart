@@ -8,8 +8,7 @@ main(List<String> args) async {
   parser.addOption("config", abbr: "c", defaultsTo: "dartnet.yaml");
   parser.addFlag("help", abbr: "h", defaultsTo: false);
 
-
-  ArgResults results =  parser.parse(args);
+  ArgResults results = parser.parse(args);
 
   if (results["help"]) {
     print('''Usage 'dartnet' :
