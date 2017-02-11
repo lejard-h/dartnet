@@ -1,0 +1,23 @@
+name: dartnet
+version: 0.0.1
+description: Configurable http server.
+author: Hadrien Lejard <hadrien.lejard@gmail.com>
+homepage: https://github.com/lejard-h/dartnet
+
+executable:
+  dartnet:
+
+environment:
+  sdk: '>=1.0.0 <2.0.0'
+
+dependencies:
+  jaguar: '>=0.3.0 <0.4.0'
+  jaguar_generator_config:
+    git:
+      url: https://github.com/Jaguar-dart/jaguar_generator_config.git
+  jaguar_mustache: '>=0.3.0 <0.4.0'
+  ansicolor: 0.0.9
+  resource: '>=2.0.0 <3.0.0'
+
+dev_dependencies:
+  test: '>=0.12.0 <0.13.0'

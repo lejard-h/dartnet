@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{currentPath}}</title>
+
+    <style>
+
+        body {
+            margin: 0;
+        }
+
+        ul {
+            list-style-type: none;
+        }
+
+        li {
+            font: 200 20px/1.5 Helvetica, Verdana, sans-serif;
+            border-bottom: 1px solid #ccc;
+        }
+
+        li:last-child {
+            border: none;
+        }
+
+        li a {
+            text-decoration: none;
+            display: block;
+            width: 100%;
+        }
+
+        li a:hover {
+            background: #f6f6f6;
+        }
+
+        input {
+            display: none;
+        }
+        input ~ ul {
+            display: none;
+        }
+        input:checked ~ ul {
+            display: block;
+        }
+    </style>
+
+</head>
+<body>
+<ul>
+    <li>{{currentPath}}</li>
+
+    <ul>
+        {{#list}}
+        <li><a href='{{href}}'>{{text}}</a></li>
+        {{/list}}
+    </ul>
+
+</ul>
+</body>
+</html>
