@@ -1,5 +1,5 @@
 # Dartnet
-Configurable http server.
+Configurable http server in dart.
 
 ## Install
 
