@@ -18,6 +18,19 @@ initLogger(Level logLevel, File logFile) {
   });
 }
 
+const Map<String, Level> logLevels = const {
+  'ALL': Level.ALL,
+  'OFF': Level.OFF,
+  'FINEST': Level.FINEST,
+  'FINER': Level.FINER,
+  'FINE': Level.FINE,
+  'CONFIG': Level.CONFIG,
+  'INFO': Level.INFO,
+  'WARNING': Level.WARNING,
+  'SEVERE': Level.SEVERE,
+  'SHOUT': Level.SHOUT
+};
+
 final AnsiPen red = new AnsiPen()..red(bold: true);
 final AnsiPen green = new AnsiPen()..green(bold: true);
 final AnsiPen yellow = new AnsiPen()..yellow(bold: true);

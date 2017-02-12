@@ -27,13 +27,12 @@ class DartnetConfiguration {
       throw "No Configuration File found at '$configFileName'";
     }
 
-    _config = loadYaml(configFile.readAsStringSync())[serverKey];
+    _config = loadYaml(configFile.readAsStringSync());
 
     _redirections = new RedirectionConfig(_getFromMap(_config, RedirectionConfig.redirectionsKey));
     _https = new HttpsConfig(_getFromMap(_config, HttpsConfig.httpsKey));
   }
 
-  static const String serverKey = "server";
   static const String portKey = "port";
   static const String addressKey = "address";
   static const String multithreadKey = "multithread";
@@ -50,22 +49,9 @@ class DartnetConfiguration {
   bool get isMultithread => _getFromMap(_config, multithreadKey) ?? false;
   String get rootDirectory => _getFromMap(_config, rootDirectoryKey) ?? "./";
   String get logFile => _getFromMap(_config, logFileKey) ?? dartnetLogFile;
-  Level get logLevel => _logLevels[_getFromMap(_config, logKey)?.toUpperCase()] ?? Level.INFO;
+  Level get logLevel => logLevels[_getFromMap(_config, logKey)?.toUpperCase()] ?? Level.INFO;
   bool get listDirectory => _getFromMap(_config, listDirectoryKey) ?? false;
 }
-
-const Map<String, Level> _logLevels = const {
-  'ALL': Level.ALL,
-  'OFF': Level.OFF,
-  'FINEST': Level.FINEST,
-  'FINER': Level.FINER,
-  'FINE': Level.FINE,
-  'CONFIG': Level.CONFIG,
-  'INFO': Level.INFO,
-  'WARNING': Level.WARNING,
-  'SEVERE': Level.SEVERE,
-  'SHOUT': Level.SHOUT
-};
 
 class RedirectionConfig {
   Map _config;
