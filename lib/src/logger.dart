@@ -8,8 +8,10 @@ initLogger(Level logLevel, File logFile) {
   }
   Logger.root.onRecord.listen((LogRecord record) {
     if (record.loggerName != "J") {
-      String log = "${record.time} (${record.level.toString()}) ${record.loggerName} -";
-      log += " ${record.error ?? ""}${record.message ?? ""}${record.stackTrace ?? ""}";
+      String log =
+          "${record.time} (${record.level.toString()}) ${record.loggerName} -";
+      log +=
+          " ${record.error ?? ""}${record.message ?? ""}${record.stackTrace ?? ""}";
       if (record.level >= logLevel) {
         print(log);
       }

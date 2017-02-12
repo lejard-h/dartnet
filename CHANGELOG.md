@@ -3,6 +3,7 @@
 ## 0.1.0
 
 - Change configuration file, remove "server" key
+- Add gzip compression
 
 ## 0.0.2
 

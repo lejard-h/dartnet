@@ -20,7 +20,8 @@ start({String configPath: dartnetConfigurationFile}) async {
     if (serverConfiguration.https.isValid) {
       security = new SecurityContext()
         ..useCertificateChain(serverConfiguration.https.certPath)
-        ..usePrivateKey(serverConfiguration.https.keyPath, password: serverConfiguration.https.passwordKey);
+        ..usePrivateKey(serverConfiguration.https.keyPath,
+            password: serverConfiguration.https.passwordKey);
     }
 
     jaguar.Configuration configuration = new jaguar.Configuration(

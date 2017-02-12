@@ -8,6 +8,7 @@ import 'package:mustache/mustache.dart';
 import 'package:jaguar/jaguar.dart';
 import 'config.dart';
 import 'utils.dart';
+import 'compression.dart';
 
 class ServeRoot extends RequestHandler {
   final DartnetConfiguration config;
@@ -18,12 +19,15 @@ class ServeRoot extends RequestHandler {
 
   Map<String, FileSystemEntity> _cache = {};
 
-  ServeRoot(this.config) : _rootDirectory = new Directory(config.rootDirectory) {
-    Resource resourceList = new Resource("package:dartnet/src/template/list.html");
+  ServeRoot(this.config)
+      : _rootDirectory = new Directory(config.rootDirectory) {
+    Resource resourceList =
+        new Resource("package:dartnet/src/template/list.html");
     resourceList.readAsString().then((template) {
       _listTmpl = new Template(template);
     });
-    Resource resource404 = new Resource("package:dartnet/src/template/error.html");
+    Resource resource404 =
+        new Resource("package:dartnet/src/template/error.html");
     resource404.readAsString().then((template) {
       _errorTmpl = new Template(template);
     });
@@ -106,15 +110,20 @@ class ServeRoot extends RequestHandler {
     List<FileSystemEntity> entities = dir.listSync();
 
     String currentPath = dir.path.replaceFirst(_rootDirectory.path, "");
-    while (currentPath.startsWith("/")) currentPath = currentPath.replaceFirst("/", "");
+    while (currentPath.startsWith("/"))
+      currentPath = currentPath.replaceFirst("/", "");
     currentPath = "/$currentPath";
 
     List<Map> list = [];
     entities.forEach((FileSystemEntity e) {
-      list.add({"href": '$currentPath${e.path.replaceFirst(dir.path,"")}', "text": e.path.replaceFirst(dir.path, "")});
+      list.add({
+        "href": '$currentPath${e.path.replaceFirst(dir.path,"")}',
+        "text": e.path.replaceFirst(dir.path, "")
+      });
     });
 
-    String render = _listTmpl.renderString({"currentPath": currentPath, "list": list});
+    String render =
+        _listTmpl.renderString({"currentPath": currentPath, "list": list});
     return new Response(render)..headers.mimeType = "text/html";
   }
 
@@ -123,12 +132,17 @@ class ServeRoot extends RequestHandler {
     return new Response(render)..headers.mimeType = "text/html";
   }
 
-  Response _sendFile(File file) => new Response(file.openRead())..headers.mimeType = fileType(file);
+  Response _sendFile(File file) =>
+      new Response(file.openRead())..headers.mimeType = fileType(file);
 
-  Response _response(Response response, Request request, Duration processingDuration) {
+  Response _response(
+      Response response, Request request, Duration processingDuration) {
     config.log.info(
         "[${request.method}] ${request.uri.path} - ${response.statusCode.toString()} - ${processingDuration.inMicroseconds / 1000 }ms");
+
+    if (config.compression == Compression.Gzip) {
+      return compressToGzip(response);
+    }
     return response;
   }
 }
-
