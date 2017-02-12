@@ -1,5 +1,0 @@
-bin:
-  'bin/jaguar_serve.dart'
-
-apis:
-  - 'lib/server.dart'
