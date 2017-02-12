@@ -1,0 +1,15 @@
+address: "0.0.0.0"
+port: 1337
+root_directory: web
+multithread: true
+log: info
+log_file: "dartnet.log"
+list_directory: false
+redirections:
+    #404: error.html
+    #500: error.html
+    default: index.html
+https:
+  cert: ssl/cert.pem
+  key: ssl/key.pem
+  password_key: "dartnet"

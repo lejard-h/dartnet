@@ -42,3 +42,10 @@ server:
   log_file: "dartnet.log"
   list_directory: false
 ```
+
+## Run example
+
+```
+cd example
+dartnet
+```
