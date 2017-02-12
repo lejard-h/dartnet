@@ -139,10 +139,6 @@ class ServeRoot extends RequestHandler {
       Response response, Request request, Duration processingDuration) {
     config.log.info(
         "[${request.method}] ${request.uri.path} - ${response.statusCode.toString()} - ${processingDuration.inMicroseconds / 1000 }ms");
-
-    if (config.compression == Compression.Gzip) {
-      return compressToGzip(response);
-    }
     return response;
   }
 }
