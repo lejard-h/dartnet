@@ -18,10 +18,9 @@ Dartnet use a configuration file (default: 'dartnet.yaml')
 
 ### Basic
 ```yaml
-server:
-  address: "0.0.0.0"
-  port: 1337
-  root_directory: build
+address: "0.0.0.0"
+port: 1337
+root_directory: build
 ```
 
 This will serve all file under the 'build' directory.
@@ -29,18 +28,29 @@ This will serve all file under the 'build' directory.
 ### Complete
 
 ```yaml
-server:
-  address: "0.0.0.0"
-  port: 1337
-  root_directory: build
-  multithread: false
-  redirections:
+address: "0.0.0.0" #default: 0.0.0.0
+
+port: 1337 #default: 8080
+
+root_directory: web #default: build
+
+multithread: true #default: true
+
+log: info #default: info
+
+log_file: "dartnet.log" #default: falsedartnet.log
+
+list_directory: false #default: false
+
+redirections: #redirection when error happen
     #404: error.html
     #500: error.html
-    default: index.html #this will redirect every error to the index.html file
-  log: info
-  log_file: "dartnet.log"
-  list_directory: false
+    default: index.html
+    
+https:
+  cert: ssl/cert.pem
+  key: ssl/key.pem
+  password_key: "dartnet"
 ```
 
 ## Run example
