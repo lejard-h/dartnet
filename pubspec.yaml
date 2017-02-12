@@ -1,5 +1,5 @@
 name: dartnet
-version: 0.0.2
+version: 0.1.0
 description: Configurable http server in dart.
 author: Hadrien Lejard <hadrien.lejard@gmail.com>
 homepage: https://github.com/lejard-h/dartnet
