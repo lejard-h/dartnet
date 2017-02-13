@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:yaml/yaml.dart';
 import 'package:logging/logging.dart';
 import 'logger.dart';
-import 'compression.dart';
 
 const String dartnetConfigurationFile = "dartnet.yaml";
 const String dartnetLogFile = "dartnet.log";
@@ -42,7 +41,7 @@ class DartnetConfiguration {
   static const String logKey = "log";
   static const String logFileKey = "log_file";
   static const String listDirectoryKey = "list_directory";
-  static const String compressionKey = "compression";
+  static const String gzipKey = "gzip";
 
   RedirectionConfig get redirections => _redirections;
   HttpsConfig get https => _https;
@@ -55,9 +54,7 @@ class DartnetConfiguration {
   Level get logLevel =>
       logLevels[_getFromMap(_config, logKey)?.toUpperCase()] ?? Level.INFO;
   bool get listDirectory => _getFromMap(_config, listDirectoryKey) ?? false;
-  Compression get compression =>
-      compressionMapper[_getFromMap(_config, compressionKey)?.toUpperCase()] ??
-      Compression.Gzip;
+  bool get gzip => _getFromMap(_config, gzipKey) ?? true;
 }
 
 class RedirectionConfig {

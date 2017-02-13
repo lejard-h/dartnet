@@ -42,6 +42,8 @@ log_file: "dartnet.log" #default: falsedartnet.log
 
 list_directory: false #default: false
 
+gzip: true #default: true
+
 redirections: #redirection when error happen
     #404: error.html
     #500: error.html

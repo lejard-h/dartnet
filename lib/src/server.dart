@@ -28,7 +28,8 @@ start({String configPath: dartnetConfigurationFile}) async {
         multiThread: serverConfiguration.isMultithread,
         port: serverConfiguration.port,
         address: serverConfiguration.address,
-        securityContext: security);
+        securityContext: security,
+        autoCompress: serverConfiguration.gzip);
 
     configuration.addApi(new ServeRoot(serverConfiguration));
     serverConfiguration.log.warning("Start ${configuration.baseUrl}");

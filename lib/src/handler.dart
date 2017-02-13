@@ -8,7 +8,6 @@ import 'package:mustache/mustache.dart';
 import 'package:jaguar/jaguar.dart';
 import 'config.dart';
 import 'utils.dart';
-import 'compression.dart';
 
 class ServeRoot extends RequestHandler {
   final DartnetConfiguration config;
