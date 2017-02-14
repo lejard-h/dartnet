@@ -1,20 +1,35 @@
 // Copyright (c) 2017, lejard_h. All rights reserved. Use of this source code
+
 // is governed by a BSD-style license that can be found in the LICENSE file.
-import 'package:dartnet/dartnet.dart';
+
 import 'package:args/args.dart';
+import 'package:dartnet/dartnet.dart';
 
 main(List<String> args) async {
   ArgParser parser = new ArgParser();
-  parser.addOption("config", abbr: "c", defaultsTo: "dartnet.yaml");
-  parser.addFlag("help", abbr: "h", defaultsTo: false);
+  parser.addCommand("init", new ArgParser()..addOption("filename", abbr: "f", defaultsTo: dartnetConfigurationFile));
+  parser.addOption("config", abbr: "c", defaultsTo: dartnetConfigurationFile);
+  parser.addFlag("help", abbr: "h", defaultsTo: false, negatable: false);
+  ArgResults results;
 
-  ArgResults results = parser.parse(args);
+  String usage = '''Usage 'dartnet' :
+\t${parser.usage.replaceAll("\n", "\n\t")}
 
+COMMANDS:
+\tinit\tCreate config file with default value.
+\t\t${parser.commands["init"].usage}
+    ''';
+
+  try {
+    results = parser.parse(args);
+  } catch (_) {
+    print(usage);
+    return;
+  }
   if (results["help"]) {
-    print('''Usage 'dartnet' :
-    --help -h show this usages
-    --config -c <config_file_path>
-    ''');
+    print(usage);
+  } else if (results.command.name == "init") {
+    initConfigFile(filename: results.command["filename"]);
   } else {
     await start(configPath: results["config"]);
   }

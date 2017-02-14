@@ -5,6 +5,7 @@ import 'logger.dart';
 
 const String dartnetConfigurationFile = "dartnet.yaml";
 const String dartnetLogFile = "dartnet.log";
+const String dartnetLoggerName = "dartnet";
 
 dynamic _getFromMap(Map map, dynamic key) =>
     map != null ? (map[key] ?? null) : null;
@@ -19,11 +20,11 @@ class DartnetConfiguration {
   Map _config;
 
   DartnetConfiguration({String configFileName: dartnetConfigurationFile}) {
-    _log = new Logger("dartnet");
+    _log = new Logger(dartnetLoggerName);
     initLogger(logLevel, new File(logFile));
 
     File configFile = new File(configFileName);
-    if (configFile?.existsSync() != true) {
+    if (configFile.existsSync() != true) {
       throw "No Configuration File found at '$configFileName'";
     }
 
@@ -38,7 +39,7 @@ class DartnetConfiguration {
   static const String addressKey = "address";
   static const String multithreadKey = "multithread";
   static const String rootDirectoryKey = "root_directory";
-  static const String logKey = "log";
+  static const String logLevelKey = "log";
   static const String logFileKey = "log_file";
   static const String listDirectoryKey = "list_directory";
   static const String gzipKey = "gzip";
@@ -52,9 +53,23 @@ class DartnetConfiguration {
   String get rootDirectory => _getFromMap(_config, rootDirectoryKey) ?? "./";
   String get logFile => _getFromMap(_config, logFileKey) ?? dartnetLogFile;
   Level get logLevel =>
-      logLevels[_getFromMap(_config, logKey)?.toUpperCase()] ?? Level.INFO;
+      logLevels[_getFromMap(_config, logLevelKey)?.toUpperCase()] ?? Level.INFO;
   bool get listDirectory => _getFromMap(_config, listDirectoryKey) ?? false;
   bool get gzip => _getFromMap(_config, gzipKey) ?? true;
+
+  String _correspondingLogString(Level level) => logLevels.keys
+      .firstWhere((String key) => logLevels[key] == level, orElse: () => null);
+
+  Map toMap() => {
+        addressKey: address,
+        portKey: port,
+        multithreadKey: isMultithread,
+        rootDirectoryKey: rootDirectory,
+        logFileKey: logFile,
+        logLevelKey: _correspondingLogString(logLevel),
+        listDirectoryKey: listDirectory,
+        gzipKey: gzip
+      };
 }
 
 class RedirectionConfig {
