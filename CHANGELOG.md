@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2
+
+- update Jaguar ro 0.4.0
+
 ## 0.1.1
 
 - `dartnet init` command: create the default config file

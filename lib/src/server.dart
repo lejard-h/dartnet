@@ -1,7 +1,7 @@
 library dartnet;
 
 import 'dart:io';
-import 'package:jaguar/jaguar.dart' as jaguar;
+import 'package:jaguar/jaguar.dart';
 import 'package:yamlicious/yamlicious.dart' as yamlicious;
 
 import 'config.dart';
@@ -25,7 +25,7 @@ start({String configPath: dartnetConfigurationFile}) async {
             password: serverConfiguration.https.passwordKey);
     }
 
-    jaguar.Configuration configuration = new jaguar.Configuration(
+    Jaguar configuration = new Jaguar(
         multiThread: serverConfiguration.isMultithread,
         port: serverConfiguration.port,
         address: serverConfiguration.address,
@@ -33,8 +33,8 @@ start({String configPath: dartnetConfigurationFile}) async {
         autoCompress: serverConfiguration.gzip);
 
     configuration.addApi(new ServeRoot(serverConfiguration));
-    serverConfiguration.log.warning("Start ${configuration.baseUrl}");
-    await jaguar.serve(configuration);
+    serverConfiguration.log.warning("Start ${configuration.resourceName}");
+    await configuration.serve();
   }
 }
 
