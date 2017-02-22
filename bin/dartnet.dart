@@ -28,7 +28,7 @@ COMMANDS:
   }
   if (results["help"]) {
     print(usage);
-  } else if (results.command.name == "init") {
+  } else if (results.command?.name == "init") {
     initConfigFile(filename: results.command["filename"]);
   } else {
     await start(configPath: results["config"]);
