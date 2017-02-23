@@ -9,27 +9,20 @@ import 'handler.dart';
 
 start({String configPath: dartnetConfigurationFile}) async {
   DartnetConfiguration serverConfiguration;
-  SecurityContext security;
 
   try {
     serverConfiguration = new DartnetConfiguration(configFileName: configPath);
   } catch (e) {
     print(e);
+    return;
   }
 
   if (serverConfiguration != null) {
-    if (serverConfiguration.https.isValid) {
-      security = new SecurityContext()
-        ..useCertificateChain(serverConfiguration.https.certPath)
-        ..usePrivateKey(serverConfiguration.https.keyPath,
-            password: serverConfiguration.https.passwordKey);
-    }
-
     Jaguar configuration = new Jaguar(
         multiThread: serverConfiguration.isMultithread,
         port: serverConfiguration.port,
         address: serverConfiguration.address,
-        securityContext: security,
+        securityContext: serverConfiguration.security,
         autoCompress: serverConfiguration.gzip);
 
     configuration.addApi(new ServeRoot(serverConfiguration));
@@ -49,9 +42,10 @@ initConfigFile({String filename: dartnetConfigurationFile}) {
 
     Map config = serverConfiguration.toMap();
     config[RedirectionConfig.redirectionsKey] = {
-      "#404": "404.html",
-      "#500": "500.html",
-      "#${RedirectionConfig.defaultKey}": "index.html"
+      ErrorsRedirectionConfig.errorsRedirectionsKey: {
+        "#404": "404.html",
+        "#500": "500.html",
+      }
     };
 
     config[HttpsConfig.httpsKey] = {

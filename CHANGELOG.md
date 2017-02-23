@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.0
+
+- Implement Path redirection
+- Config for redirections change, see example in README
+
 ## 0.1.2
 
 - update Jaguar ro 0.4.0

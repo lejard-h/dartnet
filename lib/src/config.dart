@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'package:yaml/yaml.dart';
 import 'package:logging/logging.dart';
+import 'package:glob/glob.dart';
 import 'logger.dart';
+
 
 const String dartnetConfigurationFile = "dartnet.yaml";
 const String dartnetLogFile = "dartnet.log";
@@ -16,6 +18,9 @@ class DartnetConfiguration {
 
   RedirectionConfig _redirections;
   HttpsConfig _https;
+  SecurityContext _security;
+
+  SecurityContext get security => _security;
 
   Map _config;
 
@@ -33,6 +38,13 @@ class DartnetConfiguration {
     _redirections = new RedirectionConfig(
         _getFromMap(_config, RedirectionConfig.redirectionsKey));
     _https = new HttpsConfig(_getFromMap(_config, HttpsConfig.httpsKey));
+
+    if (_https.isValid) {
+      _security = new SecurityContext()
+        ..useCertificateChain(_https.certPath)
+        ..usePrivateKey(_https.keyPath,
+            password: _https.passwordKey);
+    }
   }
 
   static const String portKey = "port";
@@ -45,7 +57,6 @@ class DartnetConfiguration {
   static const String gzipKey = "gzip";
 
   RedirectionConfig get redirections => _redirections;
-  HttpsConfig get https => _https;
 
   num get port => _getFromMap(_config, portKey) ?? 8080;
   String get address => _getFromMap(_config, addressKey) ?? "0.0.0.0";
@@ -74,13 +85,82 @@ class DartnetConfiguration {
 
 class RedirectionConfig {
   Map _config;
+  PathRedirectionConfig _pathConfig;
+  ErrorsRedirectionConfig _errorsConfig;
 
   static const String redirectionsKey = "redirections";
-  static const String defaultKey = "default";
 
-  RedirectionConfig(this._config);
+  RedirectionConfig(this._config) {
+    _pathConfig = new PathRedirectionConfig(_getFromMap(_config, PathRedirectionConfig.pathRedirectionsKey));
+    _errorsConfig = new ErrorsRedirectionConfig(_getFromMap(_config, ErrorsRedirectionConfig.errorsRedirectionsKey));
+  }
 
-  String get redirectionDefault => redirectionFor(defaultKey);
+  PathRedirectionConfig get path => _pathConfig;
+  ErrorsRedirectionConfig get onError => _errorsConfig;
+}
+
+class PathRedirectionConfig {
+  Map _config;
+
+  static const String pathRedirectionsKey = "path";
+
+  PathRedirectionConfig(Map config) {
+    _config = new Map.from(config);
+  }
+
+  PathRedirection match(String path) {
+    if (_config.containsKey(path)) {
+      if (_config[path] is String) {
+        var redirect = _config[path];
+        while (redirect is String && _config.containsKey(redirect)) {
+          redirect = _config[redirect];
+        }
+        _config[path] = redirect is PathRedirection ? redirect : new PathRedirection(path, Uri.parse(redirect));
+      }
+      return _config[path];
+    }
+    Iterable targets = _config.keys;
+    for (String target in targets) {
+      Glob matcher = new Glob(target);
+      if (matcher.allMatches(path).isNotEmpty) {
+        var redirect = _config[target];
+        _config[path] = redirect is PathRedirection ? redirect : new PathRedirection(path, Uri.parse(redirect));
+        return _config[path];
+      }
+    }
+    return null;
+  }
+
+  PathRedirection operator[](String path) {
+    if (_config.containsKey(path)) {
+      if (_config[path] is String) {
+        var redirect = _config[path];
+        while (redirect is String && _config.containsKey(redirect)) {
+          redirect = _config[redirect];
+        }
+        _config[path] = redirect is PathRedirection ? redirect : new PathRedirection(path, Uri.parse(redirect));
+      }
+      return _config[path];
+    }
+    return null;
+  }
+}
+
+class PathRedirection {
+  final String from;
+  final Uri to;
+  PathRedirection(this.from, this.to);
+
+  bool get isOutside => to.scheme.startsWith("http");
+}
+
+class ErrorsRedirectionConfig {
+  Map _config;
+
+  static const String errorsRedirectionsKey = "error";
+
+  ErrorsRedirectionConfig(this._config);
+
   String redirectionFor(dynamic key) => _getFromMap(_config, key);
 }
 

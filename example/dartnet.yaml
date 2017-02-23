@@ -6,10 +6,16 @@ log: info
 log_file: "dartnet.log"
 list_directory: false
 redirections:
-    #404: error.html
+  path:
+    /url: "https://localhost:8080"
+    /url/: "https://localhost:8080"
+    /url/**: "https://localhost:8080"
+    /error: "error.html"
+    /redirect: "https://www.google.com"
+  error:
+    404: error.html
     #500: error.html
-    default: index.html
 https:
   cert: ssl/cert.pem
   key: ssl/key.pem
-  password_key: "dartnet"
+  password_key: "jaguarPass"

@@ -44,10 +44,13 @@ list_directory: false #default: false
 
 gzip: true #default: true
 
-redirections: #redirection when error happen
-    #404: error.html
+redirections:
+  path:
+    /: "index.html" #default behavior
+    /redirect: "https://www.google.com"
+  error: #redirection when error happen
+    404: error.html
     #500: error.html
-    default: index.html
     
 https:
   cert: ssl/cert.pem
