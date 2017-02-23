@@ -12,9 +12,8 @@ redirections:
     /url/**: "https://localhost:8080"
     /error: "error.html"
     /redirect: "https://www.google.com"
-  error:
-    404: error.html
-    #500: error.html
+    /**: "index.html"
+  onNotFound: error.html
 https:
   cert: ssl/cert.pem
   key: ssl/key.pem

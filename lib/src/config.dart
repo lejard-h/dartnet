@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:yaml/yaml.dart';
+import 'package:mustache/mustache.dart';
 import 'package:logging/logging.dart';
+import 'package:resource/resource.dart';
 import 'package:glob/glob.dart';
 import 'logger.dart';
 
@@ -16,13 +18,23 @@ class DartnetConfiguration {
   Logger _log;
   Logger get log => _log;
 
+  Map _config;
   RedirectionConfig _redirections;
   HttpsConfig _https;
-  SecurityContext _security;
 
+  Template _listTmpl;
+  Template _errorTmpl;
+
+  Template get listTmpl => _listTmpl;
+  Template get errorTmpl => _errorTmpl;
+
+  SecurityContext _security;
   SecurityContext get security => _security;
 
-  Map _config;
+  Directory _rootDirectory;
+  Directory get rootDirectory => _rootDirectory;
+
+  final Map<String, dynamic> cache = {};
 
   DartnetConfiguration({String configFileName: dartnetConfigurationFile}) {
     _log = new Logger(dartnetLoggerName);
@@ -45,6 +57,17 @@ class DartnetConfiguration {
         ..usePrivateKey(_https.keyPath,
             password: _https.passwordKey);
     }
+
+    _rootDirectory = new Directory(rootDirectoryPath);
+
+    Resource resourceList = new Resource("package:dartnet/src/template/list.html");
+    resourceList.readAsString().then((template) {
+      _listTmpl = new Template(template);
+    });
+    Resource resource404 = new Resource("package:dartnet/src/template/error.html");
+    resource404.readAsString().then((template) {
+      _errorTmpl = new Template(template);
+    });
   }
 
   static const String portKey = "port";
@@ -61,7 +84,7 @@ class DartnetConfiguration {
   num get port => _getFromMap(_config, portKey) ?? 8080;
   String get address => _getFromMap(_config, addressKey) ?? "0.0.0.0";
   bool get isMultithread => _getFromMap(_config, multithreadKey) ?? false;
-  String get rootDirectory => _getFromMap(_config, rootDirectoryKey) ?? "./";
+  String get rootDirectoryPath => _getFromMap(_config, rootDirectoryKey) ?? "./";
   String get logFile => _getFromMap(_config, logFileKey) ?? dartnetLogFile;
   Level get logLevel =>
       logLevels[_getFromMap(_config, logLevelKey)?.toUpperCase()] ?? Level.INFO;
@@ -85,84 +108,35 @@ class DartnetConfiguration {
 
 class RedirectionConfig {
   Map _config;
-  PathRedirectionConfig _pathConfig;
-  ErrorsRedirectionConfig _errorsConfig;
+  Map<String, dynamic> _pathConfig;
 
   static const String redirectionsKey = "redirections";
-
-  RedirectionConfig(this._config) {
-    _pathConfig = new PathRedirectionConfig(_getFromMap(_config, PathRedirectionConfig.pathRedirectionsKey));
-    _errorsConfig = new ErrorsRedirectionConfig(_getFromMap(_config, ErrorsRedirectionConfig.errorsRedirectionsKey));
-  }
-
-  PathRedirectionConfig get path => _pathConfig;
-  ErrorsRedirectionConfig get onError => _errorsConfig;
-}
-
-class PathRedirectionConfig {
-  Map _config;
-
+  static const String notFoundCodeKey = "404";
   static const String pathRedirectionsKey = "path";
 
-  PathRedirectionConfig(Map config) {
-    _config = new Map.from(config);
+  RedirectionConfig(this._config) {
+    _pathConfig = new Map.from(_getFromMap(_config, RedirectionConfig.pathRedirectionsKey));
+
   }
 
-  PathRedirection match(String path) {
-    if (_config.containsKey(path)) {
-      if (_config[path] is String) {
-        var redirect = _config[path];
-        while (redirect is String && _config.containsKey(redirect)) {
-          redirect = _config[redirect];
-        }
-        _config[path] = redirect is PathRedirection ? redirect : new PathRedirection(path, Uri.parse(redirect));
-      }
-      return _config[path];
-    }
-    Iterable targets = _config.keys;
-    for (String target in targets) {
-      Glob matcher = new Glob(target);
-      if (matcher.allMatches(path).isNotEmpty) {
-        var redirect = _config[target];
-        _config[path] = redirect is PathRedirection ? redirect : new PathRedirection(path, Uri.parse(redirect));
-        return _config[path];
-      }
-    }
-    return null;
-  }
+  Iterable<String> get paths => _pathConfig.keys;
+  String get onNotFound => _getFromMap(_config, notFoundCodeKey);
 
-  PathRedirection operator[](String path) {
-    if (_config.containsKey(path)) {
-      if (_config[path] is String) {
-        var redirect = _config[path];
-        while (redirect is String && _config.containsKey(redirect)) {
-          redirect = _config[redirect];
+  Uri operator[](String path) {
+    if (_pathConfig.containsKey(path)) {
+      if (_pathConfig[path] is String) {
+        var redirect = _pathConfig[path];
+        while (redirect is String && _pathConfig.containsKey(redirect)) {
+          redirect = _pathConfig[redirect];
         }
-        _config[path] = redirect is PathRedirection ? redirect : new PathRedirection(path, Uri.parse(redirect));
+        _pathConfig[path] = redirect is Uri ? redirect : Uri.parse(redirect);
       }
-      return _config[path];
+      return _pathConfig[path];
     }
     return null;
   }
 }
 
-class PathRedirection {
-  final String from;
-  final Uri to;
-  PathRedirection(this.from, this.to);
-
-  bool get isOutside => to.scheme.startsWith("http");
-}
-
-class ErrorsRedirectionConfig {
-  Map _config;
-
-  static const String errorsRedirectionsKey = "error";
-
-  ErrorsRedirectionConfig(this._config);
-
-  String redirectionFor(dynamic key) => _getFromMap(_config, key);
-}
 
 class HttpsConfig {
   Map _config;

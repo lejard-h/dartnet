@@ -8,27 +8,29 @@ import 'config.dart';
 import 'handler.dart';
 
 start({String configPath: dartnetConfigurationFile}) async {
-  DartnetConfiguration serverConfiguration;
-
   try {
-    serverConfiguration = new DartnetConfiguration(configFileName: configPath);
+    dartnetConfiguration = new DartnetConfiguration(configFileName: configPath);
   } catch (e) {
     print(e);
     return;
   }
 
-  if (serverConfiguration != null) {
-    Jaguar configuration = new Jaguar(
-        multiThread: serverConfiguration.isMultithread,
-        port: serverConfiguration.port,
-        address: serverConfiguration.address,
-        securityContext: serverConfiguration.security,
-        autoCompress: serverConfiguration.gzip);
+  Jaguar configuration = new Jaguar(
+      multiThread: dartnetConfiguration.isMultithread,
+      port: dartnetConfiguration.port,
+      address: dartnetConfiguration.address,
+      securityContext: dartnetConfiguration.security,
+      autoCompress: dartnetConfiguration.gzip);
 
-    configuration.addApi(new ServeRoot(serverConfiguration));
-    serverConfiguration.log.warning("Start ${configuration.resourceName}");
-    await configuration.serve();
+  configuration.addApi(new CacheHandler());
+  for (String path in dartnetConfiguration.redirections.paths) {
+    configuration.addApi(new PathRedirectionHandler.toUri(path, dartnetConfiguration.redirections[path]));
   }
+  configuration.addApi(new PathRedirectionHandler("/", "index.html"));
+  configuration.addApi(new DartnetHandler());
+
+  dartnetConfiguration.log.warning("Start ${configuration.resourceName}");
+  await configuration.serve();
 }
 
 initConfigFile({String filename: dartnetConfigurationFile}) {
@@ -42,10 +44,8 @@ initConfigFile({String filename: dartnetConfigurationFile}) {
 
     Map config = serverConfiguration.toMap();
     config[RedirectionConfig.redirectionsKey] = {
-      ErrorsRedirectionConfig.errorsRedirectionsKey: {
-        "#404": "404.html",
-        "#500": "500.html",
-      }
+      "${RedirectionConfig.redirectionsKey}": {"#/": '"index.html" #default behavior'},
+      "#${RedirectionConfig.notFoundCodeKey}": "error.html"
     };
 
     config[HttpsConfig.httpsKey] = {
@@ -69,31 +69,16 @@ dockerize({String filename: dartnetConfigurationFile}) {
     if (dockerFile.existsSync() == false) {
       dockerFile.createSync();
     }
-    dockerFile.writeAsStringSync(_dockerFileContent(filename, config.rootDirectory, config.port));
+    dockerFile.writeAsStringSync(_dockerFileContent(filename, dartnetConfiguration.rootDirectoryPath, config.port));
   }
 }
 
 String _dockerFileContent(String configFile, String rootDirectory, int port) => 'FROM google/dart\n\n'
-'RUN pub global activate dartnet\n'
-'ENV PATH \$PATH:~/.pub-cache/bin\n\n'
-'WORKDIR /dartnet\n\n'
-'RUN cp ~/.pub-cache/bin/dartnet ./\n'
-'ADD $rootDirectory /dartnet/$rootDirectory\n'
-'ADD $configFile /dartnet/\n\n'
-'EXPOSE $port\n\n'
-'ENTRYPOINT ["./dartnet", "-c", "$configFile"]';
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    'RUN pub global activate dartnet\n'
+    'ENV PATH \$PATH:~/.pub-cache/bin\n\n'
+    'WORKDIR /dartnet\n\n'
+    'RUN cp ~/.pub-cache/bin/dartnet ./\n'
+    'ADD $rootDirectory /dartnet/$rootDirectory\n'
+    'ADD $configFile /dartnet/\n\n'
+    'EXPOSE $port\n\n'
+    'ENTRYPOINT ["./dartnet", "-c", "$configFile"]';

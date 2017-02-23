@@ -63,9 +63,8 @@ redirections:
   path:
     /: "index.html" #default behavior
     /redirect: "https://www.google.com"
-  error: #redirection when error happen
-    404: error.html
-    #500: error.html
+    /**: "index.html"
+  404: error.html
     
 https:
   cert: ssl/cert.pem
