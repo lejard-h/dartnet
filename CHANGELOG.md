@@ -4,6 +4,7 @@
 
 - Implement Path redirection
 - Config for redirections change, see example in README
+- Add `dartnet dockerize` command
 
 ## 0.1.2
 

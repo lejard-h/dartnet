@@ -57,3 +57,43 @@ initConfigFile({String filename: dartnetConfigurationFile}) {
     configFile.writeAsStringSync(yamlicious.toYamlString(config));
   }
 }
+
+dockerize({String filename: dartnetConfigurationFile}) {
+  File configFile = new File(filename);
+
+  if (configFile.existsSync() == false) {
+    stderr.writeln("ERROR: File '$filename' does not exist.");
+  } else {
+    DartnetConfiguration config = new DartnetConfiguration(configFileName: filename);
+    File dockerFile = new File("Dockerfile");
+    if (dockerFile.existsSync() == false) {
+      dockerFile.createSync();
+    }
+    dockerFile.writeAsStringSync(_dockerFileContent(filename, config.rootDirectory, config.port));
+  }
+}
+
+String _dockerFileContent(String configFile, String rootDirectory, int port) => 'FROM google/dart\n\n'
+'RUN pub global activate dartnet\n'
+'ENV PATH \$PATH:~/.pub-cache/bin\n\n'
+'WORKDIR /dartnet\n\n'
+'RUN cp ~/.pub-cache/bin/dartnet ./\n'
+'ADD $rootDirectory /dartnet/$rootDirectory\n'
+'ADD $configFile /dartnet/\n\n'
+'EXPOSE $port\n\n'
+'ENTRYPOINT ["./dartnet", "-c", "$configFile"]';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

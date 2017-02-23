@@ -12,6 +12,21 @@ or
 
 `pub run dartnet:dartnet`
 
+### Commands
+
+```
+Usage 'dartnet' :
+        -c, --config    (defaults to "dartnet.yaml")
+        -h, --help      
+
+COMMANDS:
+        init    Create config file with default value.
+                -f, --filename    (defaults to "dartnet.yaml")
+        dockerize       Create a Dockerfile from the Dartnet config file
+                -f, --filename    (defaults to "dartnet.yaml")
+
+```
+
 ## Configuration
 
 Dartnet use a configuration file (default: 'dartnet.yaml')

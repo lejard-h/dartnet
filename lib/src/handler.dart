@@ -66,7 +66,7 @@ class ServeRoot extends RequestHandler {
     return null;
   }
 
-  HttpClient _client = new HttpClient();
+  final HttpClient _client = new HttpClient();
 
   Future<Response> _redirectResponse(PathRedirection redirection, Request req, Stopwatch timer) async {
     // TODO: Handle TRACE requests correctly. See
