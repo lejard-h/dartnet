@@ -7,8 +7,16 @@ import 'package:dartnet/dartnet.dart';
 
 main(List<String> args) async {
   ArgParser parser = new ArgParser();
-  parser.addCommand("init", new ArgParser()..addOption("filename", abbr: "f", defaultsTo: dartnetConfigurationFile));
-  parser.addCommand("dockerize", new ArgParser()..addOption("filename", abbr: "f", defaultsTo: dartnetConfigurationFile));
+  parser.addCommand(
+      "init",
+      new ArgParser()
+        ..addOption("filename",
+            abbr: "f", defaultsTo: dartnetConfigurationFile));
+  parser.addCommand(
+      "dockerize",
+      new ArgParser()
+        ..addOption("filename",
+            abbr: "f", defaultsTo: dartnetConfigurationFile));
   parser.addOption("config", abbr: "c", defaultsTo: dartnetConfigurationFile);
   parser.addFlag("help", abbr: "h", defaultsTo: false, negatable: false);
   ArgResults results;

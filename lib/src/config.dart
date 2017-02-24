@@ -3,9 +3,7 @@ import 'package:yaml/yaml.dart';
 import 'package:mustache/mustache.dart';
 import 'package:logging/logging.dart';
 import 'package:resource/resource.dart';
-import 'package:glob/glob.dart';
 import 'logger.dart';
-
 
 const String dartnetConfigurationFile = "dartnet.yaml";
 const String dartnetLogFile = "dartnet.log";
@@ -54,17 +52,18 @@ class DartnetConfiguration {
     if (_https.isValid) {
       _security = new SecurityContext()
         ..useCertificateChain(_https.certPath)
-        ..usePrivateKey(_https.keyPath,
-            password: _https.passwordKey);
+        ..usePrivateKey(_https.keyPath, password: _https.passwordKey);
     }
 
     _rootDirectory = new Directory(rootDirectoryPath);
 
-    Resource resourceList = new Resource("package:dartnet/src/template/list.html");
+    Resource resourceList =
+        new Resource("package:dartnet/src/template/list.html");
     resourceList.readAsString().then((template) {
       _listTmpl = new Template(template);
     });
-    Resource resource404 = new Resource("package:dartnet/src/template/error.html");
+    Resource resource404 =
+        new Resource("package:dartnet/src/template/error.html");
     resource404.readAsString().then((template) {
       _errorTmpl = new Template(template);
     });
@@ -84,7 +83,8 @@ class DartnetConfiguration {
   num get port => _getFromMap(_config, portKey) ?? 8080;
   String get address => _getFromMap(_config, addressKey) ?? "0.0.0.0";
   bool get isMultithread => _getFromMap(_config, multithreadKey) ?? false;
-  String get rootDirectoryPath => _getFromMap(_config, rootDirectoryKey) ?? "./";
+  String get rootDirectoryPath =>
+      _getFromMap(_config, rootDirectoryKey) ?? "./";
   String get logFile => _getFromMap(_config, logFileKey) ?? dartnetLogFile;
   Level get logLevel =>
       logLevels[_getFromMap(_config, logLevelKey)?.toUpperCase()] ?? Level.INFO;
@@ -98,7 +98,7 @@ class DartnetConfiguration {
         addressKey: address,
         portKey: port,
         multithreadKey: isMultithread,
-        rootDirectoryKey: rootDirectory,
+        rootDirectoryKey: rootDirectoryPath,
         logFileKey: logFile,
         logLevelKey: _correspondingLogString(logLevel),
         listDirectoryKey: listDirectory,
@@ -115,14 +115,16 @@ class RedirectionConfig {
   static const String pathRedirectionsKey = "path";
 
   RedirectionConfig(this._config) {
-    _pathConfig = new Map.from(_getFromMap(_config, RedirectionConfig.pathRedirectionsKey));
-
+    if (_config != null) {
+      _pathConfig = new Map.from(
+          _getFromMap(_config, RedirectionConfig.pathRedirectionsKey) ?? {});
+    }
   }
 
   Iterable<String> get paths => _pathConfig.keys;
   String get onNotFound => _getFromMap(_config, notFoundCodeKey);
 
-  Uri operator[](String path) {
+  Uri operator [](String path) {
     if (_pathConfig.containsKey(path)) {
       if (_pathConfig[path] is String) {
         var redirect = _pathConfig[path];
@@ -136,7 +138,6 @@ class RedirectionConfig {
     return null;
   }
 }
-
 
 class HttpsConfig {
   Map _config;

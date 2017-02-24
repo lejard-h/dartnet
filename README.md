@@ -1,6 +1,9 @@
 # Dartnet
 Configurable http server in dart.
 
+- [ ] For production server
+- [ ] For dev server (`pub serve` proxy)
+
 ## Install
 
 `pub global activate dartnet`
@@ -53,7 +56,7 @@ multithread: true #default: true
 
 log: info #default: info
 
-log_file: "dartnet.log" #default: falsedartnet.log
+log_file: "dartnet.log" #default: dartnet.log
 
 list_directory: false #default: false
 
