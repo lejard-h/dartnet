@@ -7,14 +7,9 @@ log_file: "dartnet.log"
 list_directory: false
 redirections:
   path:
-    /url: "https://localhost:8080"
-    /url/: "https://localhost:8080"
-    /url/**: "https://localhost:8080"
-    /error: "error.html"
-    /redirect: "https://www.google.com"
-    /**: "index.html"
+    /**: "http://localhost:8080"
   onNotFound: error.html
-https:
-  cert: ssl/cert.pem
-  key: ssl/key.pem
-  password_key: "jaguarPass"
+#https:
+#  cert: ssl/cert.pem
+#  key: ssl/key.pem
+#  password_key: "jaguarPass"

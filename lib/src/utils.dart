@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:async';
-import 'package:jaguar/jaguar.dart';
 import 'package:path/path.dart' as p;
+import 'package:jaguar/jaguar.dart';
 import 'handler.dart';
 
 const Map<String, String> extMapper = const {
@@ -20,8 +20,7 @@ String fileType(File file) => extMapper[file.path.split(".").last] ?? "text/plai
 Response sendFile(File file) => new Response(file.openRead())..headers.mimeType = fileType(file);
 
 Response sendResponse(Response response, Request request, Duration processingDuration) {
-  dartnetConfiguration.log
-      .info("[${request.method}] ${request.uri.path} - ${response.statusCode.toString()} - ${processingDuration
+  dartnetConfiguration.log.info("[${request.method}] ${request.uri.path} - ${response.statusCode} - ${processingDuration
       .inMicroseconds / 1000 }ms");
   return response;
 }
@@ -86,7 +85,6 @@ Response errorTemplate(int error) {
     ..statusCode = error;
 }
 
-HttpClient _client = new HttpClient();
 const String proxyName = "Darnet";
 Future<Response> responseFromCache(Request request, String path) async {
   if (dartnetConfiguration.cache[path] != null) {
@@ -99,90 +97,70 @@ Future<Response> responseFromCache(Request request, String path) async {
   return null;
 }
 
-Uri _getTargetUrl(final Uri reqUri, String from, Uri proxyBaseUrl) {
-  StringBuffer sb = new StringBuffer();
-
-  sb.write(proxyBaseUrl);
-  if (reqUri.pathSegments.isNotEmpty) {
-    final List<String> segments = reqUri.pathSegments
-        .getRange(splitPathToSegments(from).length, reqUri.pathSegments.length)
-        .toList();
-    if (segments.isNotEmpty) {
-      if (!proxyBaseUrl.path.endsWith('/')) {
-        sb.write('/');
-      }
-      sb.write(segments.join('/'));
-    }
-    if (reqUri.path.endsWith('/')) {
-      sb.write('/');
-    }
-  }
-
-  return Uri.parse(sb.toString());
-}
+HttpClient _client = new HttpClient();
 
 Future<Response> redirect(Request req, String from, Uri to) async {
+  Uri requestUrl = to.resolve(from);
   _client.badCertificateCallback = (_, __, ___) {
     return true;
   };
-  Uri requestUrl = _getTargetUrl(req.uri, from, to);
-  final HttpClientRequest clientReq =
-  await _client.openUrl(req.method, requestUrl);
-  clientReq.followRedirects = false;
+
+  final HttpClientRequest clientReq = await _client.openUrl(req.method, requestUrl);
 
   req.headers.forEach((String key, dynamic val) {
     clientReq.headers.add(key, val);
   });
-  //TODO add forward headers
-  clientReq.headers.set('Host', requestUrl.authority);
+  clientReq.headers.set(HttpHeaders.HOST, requestUrl.authority);
 
   // Add a Via header. See
   // http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.45
-  clientReq.headers.add('via', '${req.protocolVersion} $proxyName');
+  clientReq.headers.add(HttpHeaders.VIA, '${req.protocolVersion} $proxyName');
 
   clientReq.add(await req.body);
   final HttpClientResponse clientResp = await clientReq.close();
 
-  if (clientResp.statusCode == HttpStatus.NOT_FOUND) {
-    return null;
-  }
+  final servResp = new Response<Stream<List<int>>>(clientResp, statusCode: clientResp.statusCode);
 
-  final servResp = new Response<Stream<List<int>>>(clientResp,
-      statusCode: clientResp.statusCode);
-
-  clientResp.headers.forEach((String key, dynamic val) {
-    servResp.headers.add(key, val);
+  clientResp.headers.forEach((String key, List<String> vals) {
+    servResp.headers.headers[key] ??= [];
+    for (String val in vals) {
+      if (servResp.headers.headers[key].contains(val) == false) {
+        servResp.headers.headers[key].add(val);
+      }
+    }
   });
+
+  servResp.headers.removeAll('x-content-type-options');
+  servResp.headers.removeAll('x-frame-options');
+  servResp.headers.removeAll('x-xss-protection');
 
   // Add a Via header. See
   // http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.45
-  servResp.headers.add('via', '1.1 $proxyName');
+  servResp.headers.add(HttpHeaders.VIA, '1.1 $proxyName');
 
   // Remove the transfer-encoding since the body has already been decoded by
   // [client].
-  servResp.headers.removeAll('transfer-encoding');
+  servResp.headers.removeAll(HttpHeaders.TRANSFER_ENCODING);
 
   // If the original response was gzipped, it will be decoded by [client]
   // and we'll have no way of knowing its actual content-length.
-  if (clientResp.headers.value('content-encoding') == 'gzip') {
-    servResp.headers.removeAll('content-encoding');
-    servResp.headers.removeAll('content-length');
+  if (clientResp.headers.value(HttpHeaders.CONTENT_ENCODING) == 'gzip') {
+    servResp.headers.removeAll(HttpHeaders.CONTENT_ENCODING);
+    servResp.headers.removeAll(HttpHeaders.CONTENT_LENGTH);
 
     // Add a Warning header. See
     // http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.5.2
-    servResp.headers.add('warning', '214 $proxyName "GZIP decoded"');
+    servResp.headers.add(HttpHeaders.WARNING, '214 $proxyName "GZIP decoded"');
   }
 
   // Make sure the Location header is pointing to the proxy server rather
   // than the destination server, if possible.
-  if (clientResp.isRedirect && clientResp.headers.value('location') != null) {
-    var location =
-    requestUrl.resolve(clientResp.headers.value('location')).toString();
+  if (clientResp.isRedirect && clientResp.headers.value(HttpHeaders.LOCATION) != null) {
+    var location = requestUrl.resolve(clientResp.headers.value(HttpHeaders.LOCATION)).toString();
     if (p.url.isWithin(requestUrl.toString(), location)) {
-      servResp.headers.set('location',
-          '/' + p.url.relative(location, from: requestUrl.toString()));
+      servResp.headers.set(HttpHeaders.LOCATION, '/' + p.url.relative(location, from: requestUrl.toString()));
     } else {
-      servResp.headers.set('location', location);
+      servResp.headers.set(HttpHeaders.LOCATION, location);
     }
   }
 

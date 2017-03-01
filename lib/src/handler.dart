@@ -24,9 +24,7 @@ class DartnetHandler extends RequestHandler {
   @override
   Future<Response> handleRequest(Request request, {String prefix}) async {
     Stopwatch timer = new Stopwatch()..start();
-    var entity = fileSystemToResponse(findEntity(request.uri.path)) ??
-        onNotFound() ??
-        errorTemplate(404);
+    var entity = fileSystemToResponse(findEntity(request.uri.path)) ?? onNotFound() ?? errorTemplate(404);
     return sendResponse(entity, request, timer.elapsed);
   }
 }
@@ -43,15 +41,16 @@ class PathRedirectionHandler implements RequestHandler {
   Future<Response> handleRequest(Request request, {String prefix: ""}) async {
     Stopwatch timer = new Stopwatch()..start();
     Glob glob = new Glob(_from);
-    if (_from == request.uri.path ||
-        glob.allMatches(request.uri.path).isNotEmpty) {
+    if (_from == request.uri.path || glob.allMatches(request.uri.path).isNotEmpty) {
       if (_redirect.scheme == "http" || _redirect.scheme == "https") {
         dartnetConfiguration.cache[request.uri.path] = _redirect;
       } else {
-        dartnetConfiguration.cache[request.uri.path] =
-            findEntity(_redirect.path);
+        dartnetConfiguration.cache[request.uri.path] = findEntity(_redirect.path);
       }
-      return sendResponse(await responseFromCache(request, request.uri.path), request, timer.elapsed);
+      Response response = await responseFromCache(request, request.uri.path);
+      if (response != null) {
+        return sendResponse(response, request, timer.elapsed);
+      }
     }
     return null;
   }
