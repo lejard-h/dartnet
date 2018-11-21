@@ -6,35 +6,41 @@ import 'package:jaguar/jaguar.dart';
 import 'config.dart';
 import 'handler.dart';
 
-start({String configPath: dartnetConfigurationFile}) async {
+Future<void> start({String configPath: dartnetConfigurationFile}) async {
   try {
-    dartnetConfiguration = new DartnetConfiguration(configFileName: configPath);
+    dartnet = new DartnetConfiguration(configFileName: configPath);
   } catch (e, s) {
     print(e);
     print(s);
     return;
   }
 
-  Jaguar configuration = new Jaguar(
-      multiThread: dartnetConfiguration.isMultithread,
-      port: dartnetConfiguration.port,
-      address: dartnetConfiguration.address,
-      securityContext: dartnetConfiguration.security,
-      autoCompress: dartnetConfiguration.gzip);
+  final server = new Jaguar(
+    multiThread: dartnet.isMultithread,
+    port: dartnet.port,
+    address: dartnet.address,
+    securityContext: dartnet.security,
+    autoCompress: dartnet.gzip,
+  );
 
-  configuration.addApi(new CacheHandler());
-  for (String path in dartnetConfiguration.redirections.paths) {
-    configuration.addApi(new PathRedirectionHandler.toUri(
-        path, dartnetConfiguration.redirections[path]));
+  server.get('/*', cacheHandler);
+
+  for (final path in dartnet.redirections.paths) {
+    final redirection = dartnet.redirections[path];
+    server.get(
+      path,
+      pathRedirectionHandler(redirection),
+    );
   }
-  configuration.addApi(new PathRedirectionHandler("/", "index.html"));
-  configuration.addApi(new DartnetHandler());
 
-  dartnetConfiguration.log.warning("Start ${configuration.resourceName}");
-  await configuration.serve();
+  server.get('/', pathRedirectionHandler(Uri.parse('/index.html')));
+  server.get('/*', dartnetHandler);
+
+  dartnet.log.info("Start on ${dartnet.address}:${dartnet.port}");
+  await server.serve();
 }
 
-initConfigFile({String filename: dartnetConfigurationFile}) {
+void initConfigFile({String filename: dartnetConfigurationFile}) {
   File configFile = new File(filename);
 
   if (configFile.existsSync() == true) {
@@ -45,7 +51,7 @@ initConfigFile({String filename: dartnetConfigurationFile}) {
   }
 }
 
-dockerize({String filename: dartnetConfigurationFile}) {
+void dockerize({String filename: dartnetConfigurationFile}) {
   File configFile = new File(filename);
 
   if (configFile.existsSync() == false) {
@@ -57,8 +63,9 @@ dockerize({String filename: dartnetConfigurationFile}) {
     if (dockerFile.existsSync() == false) {
       dockerFile.createSync();
     }
-    dockerFile.writeAsStringSync(_dockerFileContent(
-        filename, dartnetConfiguration.rootDirectoryPath, config.port));
+    dockerFile.writeAsStringSync(
+      _dockerFileContent(filename, dartnet.rootDirectoryPath, config.port),
+    );
   }
 }
 

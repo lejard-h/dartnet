@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:logging/logging.dart';
 import 'package:ansicolor/ansicolor.dart';
 
-initLogger(Level logLevel, File logFile) {
+void initLogger(Level logLevel, File logFile) {
   if (logFile?.existsSync() == false) {
     logFile.createSync(recursive: true);
   }

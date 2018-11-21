@@ -47,6 +47,7 @@ class DartnetConfiguration {
 
     _redirections = new RedirectionConfig(
         _getFromMap(_config, RedirectionConfig.redirectionsKey));
+
     _https = new HttpsConfig(_getFromMap(_config, HttpsConfig.httpsKey));
 
     if (_https.isValid) {
@@ -110,9 +111,9 @@ class RedirectionConfig {
   Map _config;
   Map<String, dynamic> _pathConfig;
 
-  static const String redirectionsKey = "redirections";
-  static const String notFoundCodeKey = "404";
-  static const String pathRedirectionsKey = "path";
+  static const redirectionsKey = "redirections";
+  static const notFoundCodeKey = 404;
+  static const pathRedirectionsKey = "path";
 
   RedirectionConfig(this._config) {
     if (_config != null) {

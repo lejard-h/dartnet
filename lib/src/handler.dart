@@ -1,57 +1,48 @@
 library dartnet.handler;
 
 import 'dart:async';
-import 'package:glob/glob.dart';
 import 'package:jaguar/jaguar.dart';
 import 'config.dart';
 import 'utils.dart';
 
-DartnetConfiguration dartnetConfiguration;
+DartnetConfiguration dartnet;
 
-class CacheHandler extends RequestHandler {
-  @override
-  Future<Response> handleRequest(Request request, {String prefix}) async {
-    Stopwatch timer = new Stopwatch()..start();
-    var entity = await responseFromCache(request, request.uri.path);
-    if (entity != null) {
-      return sendResponse(entity, request, timer.elapsed);
-    }
-    return null;
+FutureOr<Response> cacheHandler(Context context) async {
+  final timer = Stopwatch()..start();
+  final entity = await responseFromCache(context.req, context.req.uri.path);
+  if (entity != null) {
+    logResponse(entity, context.req, timer.elapsed);
   }
+  timer.stop();
+  return entity;
 }
 
-class DartnetHandler extends RequestHandler {
-  @override
-  Future<Response> handleRequest(Request request, {String prefix}) async {
-    Stopwatch timer = new Stopwatch()..start();
-    var entity = fileSystemToResponse(findEntity(request.uri.path)) ?? onNotFound() ?? errorTemplate(404);
-    return sendResponse(entity, request, timer.elapsed);
-  }
+FutureOr<Response> dartnetHandler(Context context) async {
+  final timer = new Stopwatch()..start();
+
+  Response response;
+
+  response = await findEntity(context.req.uri.path);
+
+  response ??= await onNotFound();
+
+  response ??= errorTemplate(404);
+
+  logResponse(response, context.req, timer.elapsed);
+  timer.stop();
+  return response;
 }
 
-class PathRedirectionHandler implements RequestHandler {
-  final Uri _redirect;
-  final String _from;
-
-  PathRedirectionHandler(this._from, String to) : _redirect = Uri.parse(to);
-
-  PathRedirectionHandler.toUri(this._from, this._redirect);
-
-  @override
-  Future<Response> handleRequest(Request request, {String prefix: ""}) async {
-    Stopwatch timer = new Stopwatch()..start();
-    Glob glob = new Glob(_from);
-    if (_from == request.uri.path || glob.allMatches(request.uri.path).isNotEmpty) {
-      if (_redirect.scheme == "http" || _redirect.scheme == "https") {
-        dartnetConfiguration.cache[request.uri.path] = _redirect;
+RouteHandler pathRedirectionHandler(Uri redirect) => (Context ctx) async {
+      Stopwatch timer = new Stopwatch()..start();
+      if (redirect.scheme == "http" || redirect.scheme == "https") {
+        dartnet.cache[ctx.req.uri.path] = redirect;
       } else {
-        dartnetConfiguration.cache[request.uri.path] = findEntity(_redirect.path);
+        dartnet.cache[ctx.req.uri.path] = findEntity(redirect.path);
       }
-      Response response = await responseFromCache(request, request.uri.path);
+      final response = await responseFromCache(ctx.req, ctx.req.uri.path);
       if (response != null) {
-        return sendResponse(response, request, timer.elapsed);
+        logResponse(response, ctx.req, timer.elapsed);
       }
-    }
-    return null;
-  }
-}
+      return response;
+    };

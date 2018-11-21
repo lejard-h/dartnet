@@ -15,55 +15,67 @@ const Map<String, String> extMapper = const {
   "gif": "image/gif"
 };
 
-String fileType(File file) => extMapper[file.path.split(".").last] ?? "text/plain";
+String fileType(File file) =>
+    extMapper[file.path.split(".").last] ?? "text/plain";
 
-Response sendFile(File file) => new Response(file.openRead())..headers.mimeType = fileType(file);
+StreamResponse sendFile(File file) => StreamResponse(
+      file.openRead(),
+      mimeType: MimeTypes.ofFile(file),
+    );
 
-Response sendResponse(Response response, Request request, Duration processingDuration) {
-  dartnetConfiguration.log.info("[${request.method}] ${request.uri.path} - ${response.statusCode} - ${processingDuration
-      .inMicroseconds / 1000 }ms");
-  return response;
+void logResponse(
+    Response response, Request request, Duration processingDuration) {
+  dartnet.log.info(
+      "[${request.method}] ${request.uri.path} - ${response.statusCode} - ${processingDuration.inMicroseconds / 1000}ms");
 }
 
 Response listDirectory(Directory dir) {
   List<FileSystemEntity> entities = dir.listSync();
 
-  String currentPath = dir.path.replaceFirst(dartnetConfiguration.rootDirectory.path, "");
-  while (currentPath.startsWith("/")) currentPath = currentPath.replaceFirst("/", "");
+  String currentPath = dir.path.replaceFirst(dartnet.rootDirectory.path, "");
+  while (currentPath.startsWith("/"))
+    currentPath = currentPath.replaceFirst("/", "");
   currentPath = "/$currentPath";
 
   List<Map> list = [];
   entities.forEach((FileSystemEntity e) {
-    list.add({"href": '$currentPath${e.path.replaceFirst(dir.path, "")}', "text": e.path.replaceFirst(dir.path, "")});
+    list.add({
+      "href": '$currentPath${e.path.replaceFirst(dir.path, "")}',
+      "text": e.path.replaceFirst(dir.path, "")
+    });
   });
 
-  String render = dartnetConfiguration.listTmpl.renderString({"currentPath": currentPath, "list": list});
+  String render =
+      dartnet.listTmpl.renderString({"currentPath": currentPath, "list": list});
   return new Response(render)..headers.mimeType = "text/html";
 }
 
-String pathFromRootDir(String path) => "${dartnetConfiguration.rootDirectory.path}/$path";
+String pathFromRootDir(String path) => "${dartnet.rootDirectory.path}/$path";
 
-FileSystemEntity findEntity(String path) {
-  FileSystemEntity entity = new File(pathFromRootDir(path));
-  if (entity?.existsSync() == true) {
-    return entity;
-  } else {
-    entity = new Directory(pathFromRootDir(path));
-    if (entity?.existsSync() == true && dartnetConfiguration.listDirectory == true) {
-      return entity;
+Future<Response> findEntity(String path) async {
+  final entity = File(pathFromRootDir(path));
+  final exist = await entity.exists();
+  if (exist == true) {
+    return fileSystemToResponse(entity);
+  } else if (dartnet.listDirectory == true) {
+    final dir = Directory(pathFromRootDir(path));
+    final dirExist = await dir.exists();
+    if (dirExist) {
+      return fileSystemToResponse(entity);
     }
   }
   return null;
 }
 
-FileSystemEntity pathInCache(String path) => dartnetConfiguration.cache[path];
+FileSystemEntity pathInCache(String path) => dartnet.cache[path];
 
-FileSystemEntity onNotFound() {
-  String path = dartnetConfiguration.redirections.onNotFound;
+Future<Response> onNotFound() async {
+  final path = dartnet.redirections.onNotFound;
   if (path != null) {
-    File file = new File(pathFromRootDir(path));
-    if (file?.existsSync() == true) {
-      return file;
+    final file = File(pathFromRootDir(path));
+    final exist = await file.exists();
+    if (exist) {
+      return fileSystemToResponse(file);
     }
   }
   return null;
@@ -79,7 +91,7 @@ Response fileSystemToResponse(FileSystemEntity entity) {
 }
 
 Response errorTemplate(int error) {
-  String render = dartnetConfiguration.errorTmpl.renderString({"error": error});
+  String render = dartnet.errorTmpl.renderString({"error": error});
   return new Response(render)
     ..headers.mimeType = "text/html"
     ..statusCode = error;
@@ -87,11 +99,11 @@ Response errorTemplate(int error) {
 
 const String proxyName = "Darnet";
 Future<Response> responseFromCache(Request request, String path) async {
-  if (dartnetConfiguration.cache[path] != null) {
-    if (dartnetConfiguration.cache[path] is FileSystemEntity) {
-      return fileSystemToResponse(dartnetConfiguration.cache[path]);
-    } else if (dartnetConfiguration.cache[path] is Uri) {
-      return redirect(request, path, dartnetConfiguration.cache[path]);
+  if (dartnet.cache[path] != null) {
+    if (dartnet.cache[path] is FileSystemEntity) {
+      return fileSystemToResponse(dartnet.cache[path]);
+    } else if (dartnet.cache[path] is Uri) {
+      return redirect(request, path, dartnet.cache[path]);
     }
   }
   return null;
@@ -105,7 +117,8 @@ Future<Response> redirect(Request req, String from, Uri to) async {
     return true;
   };
 
-  final HttpClientRequest clientReq = await _client.openUrl(req.method, requestUrl);
+  final HttpClientRequest clientReq =
+      await _client.openUrl(req.method, requestUrl);
 
   req.headers.forEach((String key, dynamic val) {
     clientReq.headers.add(key, val);
@@ -119,7 +132,8 @@ Future<Response> redirect(Request req, String from, Uri to) async {
   clientReq.add(await req.body);
   final HttpClientResponse clientResp = await clientReq.close();
 
-  final servResp = new Response<Stream<List<int>>>(clientResp, statusCode: clientResp.statusCode);
+  final servResp = new Response<Stream<List<int>>>(clientResp,
+      statusCode: clientResp.statusCode);
 
   clientResp.headers.forEach((String key, List<String> vals) {
     servResp.headers.headers[key] ??= [];
@@ -155,10 +169,14 @@ Future<Response> redirect(Request req, String from, Uri to) async {
 
   // Make sure the Location header is pointing to the proxy server rather
   // than the destination server, if possible.
-  if (clientResp.isRedirect && clientResp.headers.value(HttpHeaders.LOCATION) != null) {
-    var location = requestUrl.resolve(clientResp.headers.value(HttpHeaders.LOCATION)).toString();
+  if (clientResp.isRedirect &&
+      clientResp.headers.value(HttpHeaders.LOCATION) != null) {
+    var location = requestUrl
+        .resolve(clientResp.headers.value(HttpHeaders.LOCATION))
+        .toString();
     if (p.url.isWithin(requestUrl.toString(), location)) {
-      servResp.headers.set(HttpHeaders.LOCATION, '/' + p.url.relative(location, from: requestUrl.toString()));
+      servResp.headers.set(HttpHeaders.LOCATION,
+          '/' + p.url.relative(location, from: requestUrl.toString()));
     } else {
       servResp.headers.set(HttpHeaders.LOCATION, location);
     }
